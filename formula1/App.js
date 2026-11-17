@@ -9,10 +9,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 
 import Inicio from './Telas/Inicio';
-import Pilotos from './Telas/Pilotos';
+import Pilotos from './Telas/Equipes';
 import Campeonatos from './Telas/Campeonatos';
 import Circuitos from './Telas/Circuitos';
-import Favoritos from './Telas/Favoritos';
+import Pits from './Telas/Pits';
 import DetalhesPiloto from './Telas/DetalhesPiloto';
 import DetalhesGP from './Telas/DetalhesGP';
 
@@ -50,7 +50,7 @@ function MenuPrincipal() {
       />
 
       <Tab.Screen
-        name="Pilotos"
+        name="Equipes"
         component={Pilotos}
         options={{
           tabBarIcon: ({ color, size }) => (
@@ -80,11 +80,11 @@ function MenuPrincipal() {
       />
 
       <Tab.Screen
-        name="Favoritos"
-        component={Favoritos}
+        name="Pits"
+        component={Pits}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="heart" color={color} size={size} />
+            <Ionicons name="tire" color={color} size={size} />
           ),
         }}
       />
