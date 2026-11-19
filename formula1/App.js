@@ -12,6 +12,7 @@ import Circuitos from './Telas/Circuitos';
 import Pits from './Telas/Pits';
 import DetalhesPiloto from './Telas/DetalhesPiloto';
 import DetalhesGP from './Telas/DetalhesGP';
+import TesteGemini from './Telas/TesteGemini';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -97,6 +98,8 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator
+      //initialRouteName="TesteGemini"
+        
         screenOptions={{
           headerStyle: {
             backgroundColor: '#151515',
@@ -126,6 +129,12 @@ export default function App() {
           name="DetalhesGP"
           component={DetalhesGP}
           options={{ title: 'Detalhes do Grande Prêmio' }}
+        />
+
+        <Stack.Screen
+          name="TesteGemini"
+          component={TesteGemini}
+          options={{ title: 'Teste Gemini' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

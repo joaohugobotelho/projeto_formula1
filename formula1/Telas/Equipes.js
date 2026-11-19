@@ -8,78 +8,69 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Image,
+  ScrollView,
+  Linking,
 } from 'react-native';
+
+import dadosCarros from '../dadosCarros';
 import rafaelCamara from '../assets/rafael.jpeg';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-const Equipes = ({ navigation }) => {
+export default function Equipes({ navigation }) {
   const [pilotos, setPilotos] = useState([]);
-  const [equipes, setEquipes] = useState([]);
-  const [equipeSelecionada, setEquipeSelecionada] = useState(null);
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState(null);
+  const [equipeSelecionada, setEquipeSelecionada] = useState('McLaren');
   const [dropdownAberto, setDropdownAberto] = useState(false);
-
-  const pilotosDaEquipe = pilotos.filter(
-    (piloto) => piloto.team_name === equipeSelecionada
-  );
-
-  const organizarEquipes = (dadosPilotos) => {
-    const nomesEquipes = [
-      ...new Set(dadosPilotos.map((piloto) => piloto.team_name))
-    ];
-
-    setEquipes(nomesEquipes);
-  };
-
-  // IMAGEM CARROS
+  const [mostrarEspecificacoes, setMostrarEspecificacoes] = useState(false);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
 
   const imagensCarros = {
-    'Alpine': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/alpine/2026alpinecarleft.png',
+    'Alpine':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/alpine/2026alpinecarleft.png',
 
-    'Aston Martin': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/astonmartin/2026astonmartincarleft.png',
+    'Aston Martin':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/astonmartin/2026astonmartincarleft.png',
 
-    'Audi': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/audi/2026audicarleft.png',
+    'Audi':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/audi/2026audicarleft.png',
 
-    'Cadillac': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/cadillac/2026cadillaccarleft.png',
+    'Cadillac':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/cadillac/2026cadillaccarleft.png',
 
-    'Ferrari': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/ferrari/2026ferraricarleft.png',
+    'Ferrari':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/ferrari/2026ferraricarleft.png',
 
-    'Haas F1 Team': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/haas/2026haascarleft.png',
+    'Haas F1 Team':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/haas/2026haascarleft.png',
 
-    'McLaren': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/mclaren/2026mclarencarleft.png',
+    'McLaren':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/mclaren/2026mclarencarleft.png',
 
-    'Mercedes': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/mercedes/2026mercedescarleft.png',
+    'Mercedes':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/mercedes/2026mercedescarleft.png',
 
-    'Racing Bulls': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/racingbulls/2026racingbullscarleft.png',
+    'Racing Bulls':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/racingbulls/2026racingbullscarleft.png',
 
-    'Red Bull Racing': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/redbullracing/2026redbullracingcarleft.png',
+    'Red Bull Racing':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/redbullracing/2026redbullracingcarleft.png',
 
-    'Williams': 'https://media.formula1.com/image/upload/d_common%3Af1%3A2026%3Afallback%3Acar%3A2026fallbackcarleft.png/common/f1/2026/williams/2026williamscarleft.png',
+    'Williams':
+      'https://media.formula1.com/image/upload/d_common:f1:2026:fallback:car:2026fallbackcarleft.png/common/f1/2026/williams/2026williamscarleft.png',
   };
-
-  // IMAGEM DOS PILOTS NAO CARREGADAS
-  const fotosAlternativas = {
-    51: 'https://media.formula1.com/image/upload/c_fill,w_720/q_auto/v1740000001/common/f1/2026/haas/rafcam01/2026haasrafcam01right.webp',
-
-    41: 'https://media.formula1.com/image/upload/c_fill%2Cw_720/q_auto/v1740000001/common/f1/2026/racingbulls/arvlin01/2026racingbullsarvlin01right.webp',
-  };
-
-  const imagemCarroSelecionado = imagensCarros[equipeSelecionada];
 
 
   useEffect(() => {
-    const buscarPilotos = async () => {
+    async function buscarPilotos() {
       try {
         setCarregando(true);
-        setErro(null);
+        setErro('');
 
         const respostaSessoes = await fetch(
           'https://api.openf1.org/v1/sessions?meeting_key=1299'
         );
 
         if (!respostaSessoes.ok) {
-          throw new Error('Erro ao buscar sessões');
+          throw new Error('Não foi possível buscar as sessões.');
         }
 
         const sessoes = await respostaSessoes.json();
@@ -89,7 +80,7 @@ const Equipes = ({ navigation }) => {
         );
 
         if (!sessaoCorrida) {
-          throw new Error('Sessão de corrida não encontrada');
+          throw new Error('Sessão de corrida não encontrada.');
         }
 
         const respostaPilotos = await fetch(
@@ -97,300 +88,500 @@ const Equipes = ({ navigation }) => {
         );
 
         if (!respostaPilotos.ok) {
-          throw new Error('Erro ao buscar pilotos');
+          throw new Error('Não foi possível buscar os pilotos.');
         }
 
-        const dadosPilotos = await respostaPilotos.json();
-
-        setPilotos(dadosPilotos);
-        organizarEquipes(dadosPilotos);
+        const dados = await respostaPilotos.json();
+        setPilotos(dados);
 
       } catch (error) {
-        setErro(error.message);
+        console.log('Erro ao buscar pilotos:', error);
+        setErro('Não foi possível carregar as equipes. Tente novamente.');
       } finally {
         setCarregando(false);
       }
-    };
+    }
 
     buscarPilotos();
   }, []);
 
+  const equipes = [
+    ...new Set(pilotos.map((piloto) => piloto.team_name)),
+  ].sort();
+
+  const pilotosDaEquipe = pilotos.filter(
+    (piloto) => piloto.team_name === equipeSelecionada
+  );
+
+  const dadosCarroSelecionado =
+    dadosCarros[2026]?.equipes?.[equipeSelecionada];
+
+  function selecionarEquipe(equipe) {
+    setEquipeSelecionada(equipe);
+    setMostrarEspecificacoes(false);
+    setDropdownAberto(false);
+  }
+
+  function abrirFonte() {
+    if (dadosCarroSelecionado?.fonte) {
+      Linking.openURL(dadosCarroSelecionado.fonte);
+    }
+  }
+
   if (carregando) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#E53935" />
-        <Text style={styles.textoCarregamento}>
+      <View style={styles.carregando}>
+        <ActivityIndicator size="large" color="#E10600" />
+        <Text style={styles.textoCarregando}>
           Carregando equipes...
         </Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (erro) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.mensagemErro}>{erro}</Text>
-      </SafeAreaView>
+      <View style={styles.carregando}>
+        <Text style={styles.erro}>{erro}</Text>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.conteudo}
+    >
+      <Text style={styles.titulo}>EQUIPES</Text>
 
-      <Text style={styles.titulo}>Equipes da Fórmula 1</Text>
+      <Text style={styles.subtitulo}>
+        Temporada 2026
+      </Text>
 
-      <View>
-        <TouchableOpacity
-          style={styles.botaoDropdown}
-          onPress={() => setDropdownAberto(!dropdownAberto)}
-        >
-          <Text style={styles.textoDropdown}>
-            {equipeSelecionada || 'Selecione uma equipe'}
-          </Text>
+      <TouchableOpacity
+        style={styles.seletor}
+        onPress={() => setDropdownAberto(!dropdownAberto)}
+      >
+        <Text style={styles.textoSeletor}>
+          {equipeSelecionada || 'Selecione uma equipe'}
+        </Text>
 
-          <Text style={styles.textoDropdown}>
-            {dropdownAberto ? '▲' : '▼'}
-          </Text>
-        </TouchableOpacity>
+        <Text style={styles.seta}>
+          {dropdownAberto ? '▲' : '▼'}
+        </Text>
+      </TouchableOpacity>
 
-        {dropdownAberto && (
-          <View style={styles.listaDropdown}>
-            {equipes.map((equipe, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.itemDropdown}
-                onPress={() => {
-                  setEquipeSelecionada(equipe);
-                  setDropdownAberto(false);
-                }}
-              >
-                <Text style={styles.textoDropdown}>
-                  {equipe}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-          </View>
-        )}
-      </View>
-
-      {equipeSelecionada && (
-
-        <View style={styles.areaPilotos}>
-
-          <Text style={styles.subtitulo}>
-            Pilotos da {equipeSelecionada}
-          </Text>
-
-
-
-          {pilotosDaEquipe.map((piloto) => (
-
-            <View
-              key={piloto.driver_number}
-              style={styles.cardPiloto}
+      {dropdownAberto && (
+        <View style={styles.dropdown}>
+          {equipes.map((equipe, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.opcao}
+              onPress={() => selecionarEquipe(equipe)}
             >
-
-              {imagemCarroSelecionado && (
-                <View style={styles.areaCarro}>
-
-                </View>
-              )}
-
-              {String(piloto.driver_number) === '51' ? (
-                <Image
-                  source={rafaelCamara}
-                  style={styles.fotoPiloto}
-                  resizeMode="contain"
-                />
-              ) : piloto.headshot_url ? (
-                <Image
-                  source={{ uri: piloto.headshot_url }}
-                  style={styles.fotoPiloto}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View style={styles.fotoIndisponivel} />
-              )}
-
-
-              <View>
-                <Text style={styles.nomePiloto}>
-                  {piloto.full_name}
-                </Text>
-
-                <Text style={styles.numeroPiloto}>
-                  Número: {piloto.driver_number}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.botaoCarreira}
-                onPress={() => {
-                  console.log('Botão clicado!');
-                  console.log('Navigation:', navigation);
-
-                  navigation.navigate('DetalhesPiloto', {
-                    piloto: piloto,
-                  });
-                }}
-              >
-                <Text style={styles.textoBotaoCarreira}>
-                  VER CARREIRA
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-
-          ))}
-          {imagemCarroSelecionado && (
-            <View style={styles.areaCarro}>
-              <Text style={styles.subtitulo}>
-                Carro da Equipe
+              <Text style={styles.textoOpcao}>
+                {equipe}
               </Text>
-
-              <Image
-                source={{ uri: imagemCarroSelecionado }}
-                style={styles.fotoCarro}
-                resizeMode="contain"
-              />
-            </View>
-          )}
+            </TouchableOpacity>
+          ))}
         </View>
       )}
 
-    </SafeAreaView>
-  );
-};
+      <Text style={styles.nomeEquipe}>
+        {equipeSelecionada}
+      </Text>
 
-export default Equipes;
+      <Text style={styles.tituloSecao}>
+        PILOTOS
+      </Text>
+
+      {pilotosDaEquipe.map((piloto) => (
+        <View
+          key={piloto.driver_number}
+          style={styles.cardPiloto}
+        >
+
+          {String(piloto.driver_number) === '51' ? (
+            <Image
+              source={rafaelCamara}
+              style={styles.fotoPiloto}
+              resizeMode="cover"
+            />
+          ) : piloto.headshot_url ? (
+            <Image
+              source={{ uri: piloto.headshot_url }}
+              style={styles.fotoPiloto}
+              resizeMode="cover"
+            />
+          ) : null}
+
+
+          <View style={styles.infoPiloto}>
+            <Text style={styles.nomePiloto}>
+              {piloto.full_name}
+            </Text>
+
+            <Text style={styles.texto}>
+              Número: {piloto.driver_number}
+            </Text>
+
+            <Text style={styles.texto}>
+              País: {piloto.country_code || 'Não informado'}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.botaoCarreira}
+              onPress={() =>
+                navigation.navigate('DetalhesPiloto', {
+                  piloto: piloto,
+                })
+              }
+            >
+              <Text style={styles.textoBotao}>
+                VER CARREIRA
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ))}
+
+      <View style={styles.areaCarro}>
+        <Text style={styles.tituloSecao}>
+          CARRO DA EQUIPE
+        </Text>
+
+        <Image
+          source={{ uri: imagensCarros[equipeSelecionada] }}
+          style={styles.imagemCarro}
+          resizeMode="contain"
+        />
+
+
+        {dadosCarroSelecionado ? (
+          <>
+            <Text style={styles.nomeCarro}>
+              {dadosCarroSelecionado.modelo}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.botaoEspecificacoes}
+              onPress={() =>
+                setMostrarEspecificacoes(!mostrarEspecificacoes)
+              }
+            >
+              <Text style={styles.textoBotaoEspecificacoes}>
+                {mostrarEspecificacoes
+                  ? 'OCULTAR ESPECIFICAÇÕES'
+                  : 'VER ESPECIFICAÇÕES'}
+              </Text>
+            </TouchableOpacity>
+
+            {mostrarEspecificacoes && (
+              <View style={styles.cardEspecificacoes}>
+                <Text style={styles.tituloEspecificacoes}>
+                  FICHA TÉCNICA
+                </Text>
+
+                {Object.entries(
+                  dadosCarroSelecionado.especificacoes || {}
+                ).map(([chave, valor]) => (
+                  <View
+                    key={chave}
+                    style={styles.linhaEspecificacao}
+                  >
+                    <Text style={styles.nomeEspecificacao}>
+                      {chave}
+                    </Text>
+
+                    <Text style={styles.valorEspecificacao}>
+                      {String(valor)}
+                    </Text>
+                  </View>
+                ))}
+
+                {dadosCarroSelecionado.fonte && (
+                  <TouchableOpacity
+                    style={styles.botaoFonte}
+                    onPress={abrirFonte}
+                  >
+                    <Text style={styles.textoFonte}>
+                      CONSULTAR FONTE OFICIAL ↗
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </>
+        ) : (
+          <View style={styles.cardAviso}>
+            <Text style={styles.textoAviso}>
+              As especificações oficiais desta equipe ainda não foram
+              cadastradas para a temporada 2026.
+            </Text>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#101010',
+  },
+
+  conteudo: {
     padding: 20,
-    backgroundColor: '#101010',
+    paddingBottom: 40,
   },
 
-  titulo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 20,
-  },
-
-  botaoDropdown: {
+  carregando: {
+    flex: 1,
     backgroundColor: '#101010',
-    padding: 16,
-    borderRadius: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E53935',
-  },
-  listaDropdown: {
-    backgroundColor: '#101010',
-    marginTop: 5,
-    borderRadius: 10,
   },
 
-  itemDropdown: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#101010',
-  },
-
-  textoDropdown: {
+  textoCarregando: {
     color: '#FFFFFF',
+    marginTop: 15,
     fontSize: 16,
   },
 
-  areaPilotos: {
-    marginTop: 25,
+  erro: {
+    color: '#E10600',
+    fontSize: 16,
+    textAlign: 'center',
+    padding: 20,
+  },
+
+  titulo: {
+    color: '#FFFFFF',
+    fontSize: 30,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 15,
   },
 
   subtitulo: {
+    color: '#AAAAAA',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+
+  seletor: {
+    backgroundColor: '#222222',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E10600',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  textoSeletor: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
+  seta: {
+    color: '#E10600',
+    fontSize: 16,
+  },
+
+  dropdown: {
+    backgroundColor: '#222222',
+    marginTop: 5,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+
+  opcao: {
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333333',
+  },
+
+  textoOpcao: {
+    color: '#FFFFFF',
+    fontSize: 15,
+  },
+
+  nomeEquipe: {
+    color: '#E10600',
+    fontSize: 25,
+    fontWeight: 'bold',
+    marginTop: 30,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+
+  tituloSecao: {
     color: '#FFFFFF',
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 15,
-    alignSelf: 'flex-start',
-    margintop: 50,
-
   },
 
   cardPiloto: {
-    backgroundColor: '#101010',
+    backgroundColor: '#1C1C1C',
+    borderRadius: 10,
     padding: 12,
-    borderRadius: 12,
+    marginBottom: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#E10600',
   },
 
   fotoPiloto: {
-    width: 85,
-    height: 85,
-    borderRadius: 10,
-    marginRight: 15,
+    width: 115,
+    height: 135,
+    backgroundColor: '#252525',
+    borderRadius: 8,
   },
 
   fotoIndisponivel: {
-    width: 85,
-    height: 85,
-    borderRadius: 10,
-    marginRight: 15,
-    backgroundColor: '#3A4A60',
+    width: 115,
+    height: 135,
+    backgroundColor: '#252525',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  textoFoto: {
+    color: '#777777',
+  },
+
+  infoPiloto: {
+    flex: 1,
+    marginLeft: 15,
   },
 
   nomePiloto: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
+    marginBottom: 10,
   },
 
-  numeroPiloto: {
-    color: '#AAB8CC',
-    marginTop: 5,
+  imagemCarro: {
+    width: '100%',
+    height: 220,
+    resizeMode: 'contain',
+    marginBottom: 15,
   },
 
-  textoCarregamento: {
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginTop: 10,
+
+  texto: {
+    color: '#BBBBBB',
+    fontSize: 14,
+    marginBottom: 5,
   },
 
-  mensagemErro: {
-    color: '#FF4444',
-    fontSize: 16,
-  },
-
-  // CARROS 
-  areaCarro: {
-    backgroundColor: '#101010',
-    borderRadius: 15,
+  botaoCarreira: {
+    backgroundColor: '#E10600',
     padding: 10,
-    marginBottom: 20,
+    borderRadius: 5,
+    marginTop: 10,
     alignItems: 'center',
   },
 
-  fotoCarro: {
-    width: '100%',
-    height: 180,
-  },
-
-  // CARREIRA PILOTOS
-  botaoCarreira: {
-    backgroundColor: '#E10600',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginLeft: 'auto',
-  },
-
-  textoBotaoCarreira: {
+  textoBotao: {
     color: '#FFFFFF',
-    fontSize: 11,
     fontWeight: 'bold',
+    fontSize: 12,
+  },
+
+  areaCarro: {
+    marginTop: 35,
+  },
+
+  nomeCarro: {
+    color: '#E10600',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+
+  botaoEspecificacoes: {
+    backgroundColor: '#E10600',
+    padding: 15,
+    borderRadius: 7,
+    alignItems: 'center',
+  },
+
+  textoBotaoEspecificacoes: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+
+  cardEspecificacoes: {
+    backgroundColor: '#1C1C1C',
+    padding: 18,
+    borderRadius: 8,
+    marginTop: 15,
+  },
+
+  tituloEspecificacoes: {
+    color: '#E10600',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+
+  linhaEspecificacao: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#333333',
+    paddingVertical: 12,
+  },
+
+  nomeEspecificacao: {
+    color: '#AAAAAA',
+    fontSize: 13,
+    marginBottom: 5,
+    textTransform: 'capitalize',
+  },
+
+  valorEspecificacao: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+
+  botaoFonte: {
+    marginTop: 20,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E10600',
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+
+  textoFonte: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+
+  cardAviso: {
+    backgroundColor: '#1C1C1C',
+    padding: 18,
+    borderRadius: 8,
+  },
+
+  textoAviso: {
+    color: '#AAAAAA',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
