@@ -3,10 +3,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
-
-
-
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import Inicio from './Telas/Inicio';
 import Pilotos from './Telas/Equipes';
@@ -84,7 +81,11 @@ function MenuPrincipal() {
         component={Pits}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="tire" color={color} size={size} />
+            <MaterialCommunityIcons
+              name="tire"
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
