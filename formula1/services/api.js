@@ -1,3 +1,5 @@
+import { setoresCircuitos } from "./setoresCircuitos";
+
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -19,7 +21,7 @@ const CONTEXTO_ATUAL = `
   como se ainda fossem a situação atual.
 `;
 
-// CONFIGURAÇÃO GERAL DO GEMINI
+
 async function consultarGemini(pergunta) {
   try {
     const resposta = await fetch(
@@ -53,7 +55,6 @@ async function consultarGemini(pergunta) {
 
     const dados = await resposta.json();
 
-    // Verifica se ocorreu algum erro na requisição.
     if (!resposta.ok) {
       console.log('STATUS:', resposta.status);
 
@@ -73,7 +74,7 @@ async function consultarGemini(pergunta) {
       throw new Error('O Gemini não retornou uma resposta.');
     }
 
-    // Extrai o texto gerado pelo Gemini.
+
     const texto = candidato.content?.parts
       ?.map(parte => parte.text || '')
       .join('\n')
@@ -85,8 +86,7 @@ async function consultarGemini(pergunta) {
       );
     }
 
-    // Fontes só serão preenchidas quando houver
-    // pesquisa com Google Search habilitada.
+
     const chunks =
       candidato.groundingMetadata?.groundingChunks || [];
 
@@ -116,7 +116,7 @@ async function consultarGemini(pergunta) {
 }
 
 
-// TESTAR CONEXÃO COM O GEMINI
+
 export async function testarGemini() {
   const pergunta = `
     ${CONTEXTO_ATUAL}
@@ -134,7 +134,7 @@ export async function testarGemini() {
 }
 
 
-// BUSCAR ESPECIFICAÇÕES DOS CARROS
+
 export async function buscarEspecificacoesCarro(
   equipe,
   temporada = 2026
@@ -177,7 +177,7 @@ export async function buscarEspecificacoesCarro(
 }
 
 
-// BUSCAR HISTÓRIA DOS PILOTOS
+
 export async function buscarHistoriaPiloto(piloto) {
   const nome = piloto.full_name || 'Piloto desconhecido';
 
@@ -243,3 +243,336 @@ export async function buscarHistoriaPiloto(piloto) {
 
   return await consultarGemini(pergunta);
 }
+
+
+
+
+
+export async function buscarDadosCircuito(gp) {
+  try {
+    console.log('GP SELECIONADO:', gp);
+
+    const circuitoKey = gp.circuit_key ?? gp.circuitKey;
+    const temporada = Number(gp.year ?? gp.season);
+
+    if (!circuitoKey) {
+      throw new Error('Identificador do circuito não encontrado.');
+    }
+
+    if (!temporada) {
+      throw new Error('Temporada do GP não encontrada.');
+    }
+
+    const url = `https://api.multiviewer.app/api/v1/circuits/${circuitoKey}/${temporada}`;
+
+    console.log('URL DO CIRCUITO:', url);
+
+    // Primeiro fazemos a requisição
+    const resposta = await fetch(url);
+
+    // Depois verificamos se ela funcionou
+    if (!resposta.ok) {
+      throw new Error(
+        `Não foi possível buscar os dados do circuito. Status: ${resposta.status}`
+      );
+    }
+
+    // Agora recebemos os dados em JSON
+    const dados = await resposta.json();
+
+    // LOGS DA AUDITORIA
+    console.log('========== AUDITORIA DO CIRCUITO ==========');
+    console.log('GP SELECIONADO:', gp);
+    console.log('CIRCUIT KEY:', circuitoKey);
+    console.log('TEMPORADA:', temporada);
+    console.log('NOME DO CIRCUITO:', dados.circuitName);
+    console.log('TOTAL DE CURVAS:', dados.corners?.length);
+    console.log('CURVAS DO CIRCUITO:', dados.corners);
+
+    console.log(
+      'IDENTIFICADORES DAS CURVAS:',
+      dados.corners?.map(curva =>
+        `${curva.number}${curva.letter || ''}`
+      )
+    );
+
+    console.log('===========================================');
+
+    // Mantemos a temporada nos dados retornados
+    const dadosComTemporada = {
+      ...dados,
+      season: temporada
+    };
+
+    return dadosComTemporada;
+
+  } catch (erro) {
+    console.log('Erro ao buscar circuito:', erro.message);
+    throw erro;
+  }
+}
+
+
+
+export function auditarMapeamentoSetores(dadosCircuito) {
+  try {
+    if (!dadosCircuito) {
+      throw new Error('Dados do circuito não encontrados.');
+    }
+
+    const temporada = Number(
+      dadosCircuito.season || dadosCircuito.year
+    );
+
+    const chaveCircuito =
+      `${dadosCircuito.circuitKey}-${temporada}`;
+
+    const configuracao = setoresCircuitos[chaveCircuito];
+
+    if (!configuracao) {
+      return {
+        sucesso: false,
+        mensagem: 'Circuito sem mapeamento cadastrado.',
+        chaveCircuito,
+      };
+    }
+
+    const curvasReais = (dadosCircuito.corners || []).map(curva =>
+      `${curva.number}${curva.letter || ''}`
+    );
+
+    const curvasCadastradas = [
+      ...configuracao.setores.S1.curvas.map(String),
+      ...configuracao.setores.S2.curvas.map(String),
+      ...configuracao.setores.S3.curvas.map(String),
+    ];
+
+    const curvasInexistentes = curvasCadastradas.filter(
+      curva => !curvasReais.includes(curva)
+    );
+
+    const curvasNaoMapeadas = curvasReais.filter(
+      curva => !curvasCadastradas.includes(curva)
+    );
+
+    const curvasDuplicadas = curvasCadastradas.filter(
+      (curva, index) =>
+        curvasCadastradas.indexOf(curva) !== index
+    );
+
+    const setoresComProblemas = [];
+
+    ['S1', 'S2', 'S3'].forEach(setor => {
+      const dadosSetor = configuracao.setores[setor];
+
+      if (!dadosSetor || !Array.isArray(dadosSetor.curvas)) {
+        setoresComProblemas.push(setor);
+      }
+    });
+
+    const aprovado =
+      curvasInexistentes.length === 0 &&
+      curvasNaoMapeadas.length === 0 &&
+      curvasDuplicadas.length === 0 &&
+      setoresComProblemas.length === 0;
+
+    const resultado = {
+      sucesso: aprovado,
+      circuito: dadosCircuito.circuitName,
+      temporada,
+      chaveCircuito,
+      totalCurvasReais: curvasReais.length,
+      totalCurvasCadastradas: curvasCadastradas.length,
+      curvasInexistentes,
+      curvasNaoMapeadas,
+      curvasDuplicadas,
+      setoresComProblemas,
+    };
+
+    console.log('========== AUDITORIA DOS SETORES ==========');
+    console.log(JSON.stringify(resultado, null, 2));
+    console.log(
+      aprovado
+        ? 'MAPEAMENTO ESTRUTURAL APROVADO'
+        : 'MAPEAMENTO PRECISA DE REVISÃO'
+    );
+    console.log('===========================================');
+
+    return resultado;
+
+  } catch (erro) {
+    console.log('Erro na auditoria:', erro.message);
+    throw erro;
+  }
+}
+
+
+
+
+
+
+export async function buscarAnaliseSetor(
+  setor,
+  dadosCircuito,
+  dadosSetor = null
+) {
+  try {
+
+    if (!['S1', 'S2', 'S3'].includes(setor)) {
+      throw new Error('Setor inválido. Selecione S1, S2 ou S3.');
+    }
+
+
+    if (!dadosCircuito) {
+      throw new Error('Dados do circuito não encontrados.');
+    }
+
+    const temporada = Number(
+      dadosCircuito.season || dadosCircuito.year
+    );
+
+    if (!temporada) {
+      throw new Error('Temporada do circuito não identificada.');
+    }
+
+
+    const chaveCircuito =
+      `${dadosCircuito.circuitKey}-${temporada}`;
+
+    const configuracao = setoresCircuitos[chaveCircuito];
+
+    if (!configuracao) {
+      throw new Error(
+        'A divisão oficial dos setores deste circuito ainda não foi cadastrada.'
+      );
+    }
+
+
+    const configuracaoSetor = configuracao.setores?.[setor];
+
+    if (!configuracaoSetor) {
+      throw new Error(
+        `Configuração do setor ${setor} não encontrada.`
+      );
+    }
+
+
+    const curvasConfiguradas =
+      configuracaoSetor.curvas.map(String);
+
+    const curvasDoSetor = (dadosCircuito.corners || [])
+      .filter(curva => {
+        const identificacao =
+          `${curva.number}${curva.letter || ''}`;
+
+        return curvasConfiguradas.includes(identificacao);
+      });
+
+    if (curvasDoSetor.length === 0) {
+      throw new Error(
+        `Nenhuma curva encontrada para o setor ${setor}.`
+      );
+    }
+
+
+    const informacoesCircuito = {
+      nome: dadosCircuito.circuitName,
+      temporada,
+      setorSelecionado: setor,
+      limiteDoSetor: configuracaoSetor.limite,
+
+      curvasDoSetor: curvasDoSetor.map(curva => ({
+        numero: curva.number,
+        letra: curva.letter || '',
+        angulo: curva.angle,
+        comprimento: curva.length,
+        posicao: curva.trackPosition
+      }))
+    };
+
+
+    const pergunta = `
+      Você é um engenheiro especializado em Fórmula 1,
+      aerodinâmica e análise técnica de circuitos.
+
+      ${CONTEXTO_ATUAL}
+
+      Analise tecnicamente o setor selecionado no F1 HUB.
+
+      CIRCUITO: ${informacoesCircuito.nome}
+      TEMPORADA: ${temporada}
+      SETOR: ${setor}
+
+      LIMITE OFICIAL:
+      ${informacoesCircuito.limiteDoSetor}
+
+      CURVAS DO SETOR:
+      ${JSON.stringify(
+      informacoesCircuito.curvasDoSetor,
+      null,
+      2
+    )}
+
+      DADOS ADICIONAIS:
+      ${dadosSetor
+        ? JSON.stringify(dadosSetor, null, 2)
+        : 'Nenhum dado adicional de telemetria foi fornecido.'}
+
+      Analise exclusivamente as curvas informadas.
+
+      ORGANIZE A RESPOSTA:
+
+      1. CARACTERÍSTICAS DO SETOR
+      Descreva o perfil técnico do trecho.
+
+      2. CURVAS E TRAÇADO
+      Explique as características das curvas fornecidas.
+
+      3. DESAFIOS DE PILOTAGEM
+      Explique os desafios de frenagem, aceleração,
+      tração e aerodinâmica quando aplicáveis.
+
+      4. DESEMPENHO E TELEMETRIA
+      Analise dados de desempenho somente quando
+      houver informações disponíveis.
+
+      5. RESUMO TÉCNICO
+      Apresente os principais pontos do setor.
+
+      REGRAS:
+
+      - Não invente velocidades ou pontos de frenagem.
+      - Não invente dados de telemetria.
+      - Não inclua curvas de outros setores.
+      - Diferencie fatos confirmados de hipóteses.
+      - Não confunda setores de cronometragem com
+        setores de fiscais (marshal sectors).
+      - Informe quando não houver dados suficientes.
+      - Responda em português brasileiro.
+      - Utilize subtítulos e linguagem clara.
+    `;
+
+
+    console.log('CIRCUITO:', informacoesCircuito.nome);
+    console.log('TEMPORADA:', temporada);
+    console.log('CHAVE:', chaveCircuito);
+    console.log('SETOR:', setor);
+    console.log(
+      'CURVAS ENVIADAS:',
+      informacoesCircuito.curvasDoSetor
+    );
+
+
+    const resultado = await consultarGemini(pergunta);
+
+    return resultado;
+
+  } catch (erro) {
+    console.log('Erro ao analisar setor:', erro.message);
+    throw erro;
+  }
+}
+
+
+
+
