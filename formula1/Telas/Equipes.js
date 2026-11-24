@@ -11,11 +11,13 @@ import {
   ScrollView,
   Linking,
 } from 'react-native';
-
+import { Ionicons } from '@expo/vector-icons';
+import { useFavoritos } from '../context/FavoritosContext';
 import dadosCarros from '../dadosCarros';
 import rafaelCamara from '../assets/rafael.jpeg';
 
 export default function Equipes({ navigation }) {
+  const {alternarFavorito, ehFavorito} = useFavoritos();
   const [pilotos, setPilotos] = useState([]);
   const [equipeSelecionada, setEquipeSelecionada] = useState('McLaren');
   const [dropdownAberto, setDropdownAberto] = useState(false);
@@ -218,6 +220,16 @@ export default function Equipes({ navigation }) {
 
           <View style={styles.infoPiloto}>
             <Text style={styles.nomePiloto}>
+              <TouchableOpacity
+                style={styles.botaoFavorito}
+                onPress={() => alternarFavorito('pilotos', piloto)}
+              >
+                <Ionicons
+                  name={ehFavorito('pilotos', piloto) ? 'heart' : 'heart-outline'}
+                  size={25}
+                  color="#E10600"
+                />
+              </TouchableOpacity>
               {piloto.full_name}
             </Text>
 
@@ -584,4 +596,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
+  // botao favoritar
+  botaoFavorito: {
+  alignSelf: 'flex-start',
+  padding: 5,
+  marginBottom: 5,
+},
 });

@@ -13,8 +13,11 @@ import {
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import{useFavoritos} from '../context/FavoritosContext';
 
 export default function Circuitos({ navigation }) {
+  const {alternarFavorito, ehFavorito} = useFavoritos();
   const [listaGPs, setListaGPs] = useState([]);
   const [termoBusca, setTermoBusca] = useState('');
   const [ano, setAno] = useState(2025);
@@ -65,54 +68,72 @@ export default function Circuitos({ navigation }) {
     return new Date(data).toLocaleDateString('pt-BR');
   }
 
-  function mostrarGP({ item }) {
-    return (
-      <TouchableOpacity
-        style={estilos.cartao}
-        onPress={() =>
-          navigation.navigate('DetalhesGP', { gp: item })
-        }
-      >
-        {item.circuit_image ? (
-          <Image
-            source={{ uri: item.circuit_image }}
-            style={estilos.imagem}
-          />
-        ) : null}
+  
+function mostrarGP({ item }) {
+  return (
+    <View style={estilos.cartao}>
+      {item.circuit_image ? (
+        <Image
+          source={{ uri: item.circuit_image }}
+          style={estilos.imagem}
+        />
+      ) : null}
 
-        <View style={estilos.informacoes}>
-          <View style={estilos.cabecalho}>
-            <Text style={estilos.nomeGP}>
-              {item.meeting_name}
-            </Text>
-
-            {item.country_flag ? (
-              <Image
-                source={{ uri: item.country_flag }}
-                style={estilos.bandeira}
-              />
-            ) : null}
-          </View>
-
-          <Text style={estilos.circuito}>
-            {item.circuit_short_name}
+      <View style={estilos.informacoes}>
+        <View style={estilos.cabecalho}>
+          <Text style={estilos.nomeGP}>
+            {item.meeting_name}
           </Text>
 
-          <Text style={estilos.local}>
-            {item.location} - {item.country_name}
-          </Text>
+          <TouchableOpacity
+            onPress={() => alternarFavorito('circuitos', item)}
+            style={estilos.botaoFavorito}
+          >
+            <Ionicons
+              name={
+                ehFavorito('circuitos', item)
+                  ? 'heart'
+                  : 'heart-outline'
+              }
+              size={25}
+              color="#E10600"
+            />
+          </TouchableOpacity>
 
-          <Text style={estilos.data}>
-            Data: {mostrarData(item.date_start)}
-          </Text>
+          {item.country_flag ? (
+            <Image
+              source={{ uri: item.country_flag }}
+              style={estilos.bandeira}
+            />
+          ) : null}
+        </View>
 
+        <Text style={estilos.circuito}>
+          {item.circuit_short_name}
+        </Text>
+
+        <Text style={estilos.local}>
+          {item.location} - {item.country_name}
+        </Text>
+
+        <Text style={estilos.data}>
+          Data: {mostrarData(item.date_start)}
+        </Text>
+
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('DetalhesGP', { gp: item })
+          }
+        >
           <Text style={estilos.detalhes}>
             Ver detalhes →
           </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  }
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 
   return (
     <SafeAreaView style={estilos.container}>
@@ -314,4 +335,7 @@ const estilos = StyleSheet.create({
     textAlign: 'center',
     marginTop: 30,
   },
+  botaoFavorito: {
+  padding: 5,
+},
 });
