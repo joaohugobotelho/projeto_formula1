@@ -2,7 +2,6 @@ import { setoresCircuitos } from "./setoresCircuitos";
 
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
 const MODELO = 'gemini-3.1-flash-lite';
 
 

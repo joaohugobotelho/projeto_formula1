@@ -15,9 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFavoritos } from '../context/FavoritosContext';
 import dadosCarros from '../dadosCarros';
 import rafaelCamara from '../assets/rafael.jpeg';
+import limblad from '../assets/limblad.jpg';
 
 export default function Equipes({ navigation }) {
-  const {alternarFavorito, ehFavorito} = useFavoritos();
+  const { alternarFavorito, ehFavorito } = useFavoritos();
   const [pilotos, setPilotos] = useState([]);
   const [equipeSelecionada, setEquipeSelecionada] = useState('McLaren');
   const [dropdownAberto, setDropdownAberto] = useState(false);
@@ -115,8 +116,27 @@ export default function Equipes({ navigation }) {
     (piloto) => piloto.team_name === equipeSelecionada
   );
 
-  const dadosCarroSelecionado =
-    dadosCarros[2026]?.equipes?.[equipeSelecionada];
+  const nomesEquipes = {
+  'McLaren': 'McLaren',
+  'Mercedes': 'Mercedes',
+  'Ferrari': 'Ferrari',
+  'Red Bull Racing': 'RedBull',
+  'Red Bull': 'RedBull',
+  'Aston Martin': 'AstonMartin',
+  'Alpine': 'Alpine',
+  'Williams': 'Williams',
+  'Racing Bulls': 'RacingBulls',
+  'RB': 'RacingBulls',
+  'Haas F1 Team': 'Haas',
+  'Haas': 'Haas',
+  'Audi': 'Audi',
+  'Cadillac': 'Cadillac',
+};
+
+const chaveEquipe = nomesEquipes[equipeSelecionada] || equipeSelecionada;
+
+const dadosCarroSelecionado =
+  dadosCarros[2026]?.equipes?.[chaveEquipe];
 
   function selecionarEquipe(equipe) {
     setEquipeSelecionada(equipe);
@@ -209,6 +229,12 @@ export default function Equipes({ navigation }) {
               style={styles.fotoPiloto}
               resizeMode="cover"
             />
+          ) : String(piloto.driver_number) === '41' ? (
+            <Image
+              source={limblad}
+              style={styles.fotoPiloto}
+              resizeMode="cover"
+            />
           ) : piloto.headshot_url ? (
             <Image
               source={{ uri: piloto.headshot_url }}
@@ -216,7 +242,6 @@ export default function Equipes({ navigation }) {
               resizeMode="cover"
             />
           ) : null}
-
 
           <View style={styles.infoPiloto}>
             <Text style={styles.nomePiloto}>
@@ -237,9 +262,7 @@ export default function Equipes({ navigation }) {
               Número: {piloto.driver_number}
             </Text>
 
-            <Text style={styles.texto}>
-              País: {piloto.country_code || 'Não informado'}
-            </Text>
+
 
             <TouchableOpacity
               style={styles.botaoCarreira}
@@ -598,8 +621,8 @@ const styles = StyleSheet.create({
   },
   // botao favoritar
   botaoFavorito: {
-  alignSelf: 'flex-start',
-  padding: 5,
-  marginBottom: 5,
-},
+    alignSelf: 'flex-start',
+    padding: 5,
+    marginBottom: 5,
+  },
 });
