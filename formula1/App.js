@@ -21,7 +21,7 @@ import Sobre from './Telas/Sobre';
 
 import DetalhesPiloto from './Telas/DetalhesPiloto';
 import DetalhesGP from './Telas/DetalhesGP';
-import TesteGemini from './Telas/TesteGemini';
+//import TesteGemini from './Telas/TesteGemini';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -231,14 +231,7 @@ export default function App() {
           }}
         />
 
-        <Stack.Screen
-          name="TesteGemini"
-          component={TesteGemini}
-          options={{
-            title: 'Teste Gemini',
-          }}
-        />
-
+        
       </Stack.Navigator>
 
     </NavigationContainer>

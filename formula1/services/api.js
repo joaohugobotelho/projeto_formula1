@@ -1,6 +1,5 @@
 import { setoresCircuitos } from "./setoresCircuitos";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
 const MODELO = 'gemini-3.1-flash-lite';
 
 
@@ -19,98 +18,140 @@ const CONTEXTO_ATUAL = `
 `;
 
 
+
+// adiona mais tentativas se a api do gemini falhar d eprimeira
+
+const ESPERA = ms =>
+  new Promise(resolve => setTimeout(resolve, ms));
+
 async function consultarGemini(pergunta) {
-  try {
-    const resposta = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`,
-      {
-        method: 'POST',
+  const MAX_TENTATIVAS = 3;
 
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': GEMINI_API_KEY,
-        },
-
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  text: pergunta,
-                },
-              ],
-            },
-          ],
-
-          generationConfig: {
-            temperature: 0.3,
-          },
-        }),
-      }
+  if (!GEMINI_API_KEY) {
+    throw new Error(
+      'Chave da API Gemini não configurada.'
     );
+  }
 
-    const dados = await resposta.json();
+  for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+    try {
+      console.log(
+        `Consultando Gemini. Tentativa ${tentativa}/${MAX_TENTATIVAS}`
+      );
 
-    if (!resposta.ok) {
-      console.log('STATUS:', resposta.status);
+      const resposta = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': GEMINI_API_KEY,
+          },
+
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: pergunta }],
+              },
+            ],
+
+            generationConfig: {
+              temperature: 0.3,
+            },
+          }),
+        }
+      );
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        const erro = new Error(
+          dados.error?.message || 'Erro na API Gemini'
+        );
+
+        erro.status = resposta.status;
+
+        console.log('STATUS:', resposta.status);
+        console.log('ERRO:', erro.message);
+
+        
+        if (
+          resposta.status === 503 ||
+          resposta.status === 502 ||
+          resposta.status === 500 ||
+          resposta.status === 429
+        ) {
+          throw erro;
+        }
+
+        throw erro;
+      }
+
+      const candidato = dados.candidates?.[0];
+
+      const texto = candidato?.content?.parts
+        ?.map(parte => parte.text || '')
+        .join('\n')
+        .trim();
+
+      if (!texto) {
+        throw new Error(
+          'O Gemini retornou uma resposta vazia.'
+        );
+      }
+
+      const chunks =
+        candidato.groundingMetadata?.groundingChunks || [];
+
+      const fontes = chunks
+        .filter(item => item.web?.uri)
+        .map(item => ({
+          titulo: item.web.title || 'Fonte consultada',
+          url: item.web.uri,
+        }));
+
+      const fontesUnicas = [
+        ...new Map(
+          fontes.map(fonte => [fonte.url, fonte])
+        ).values(),
+      ];
+
+      return {
+        texto,
+        fontes: fontesUnicas,
+      };
+
+    } catch (erro) {
+      console.log(
+        `Falha na tentativa ${tentativa}:`,
+        erro.message
+      );
+
+      const erroTemporario = [
+        429,
+        500,
+        502,
+        503,
+      ].includes(erro.status);
+
+      if (!erroTemporario || tentativa === MAX_TENTATIVAS) {
+        throw erro;
+      }
+
+      
+      const tempoEspera = 2000 * Math.pow(2, tentativa - 1);
 
       console.log(
-        'ERRO COMPLETO:',
-        JSON.stringify(dados, null, 2)
+        `Nova tentativa em ${tempoEspera / 1000} segundos...`
       );
 
-      throw new Error(
-        dados.error?.message || 'Erro na API Gemini'
-      );
+      await ESPERA(tempoEspera);
     }
-
-    const candidato = dados.candidates?.[0];
-
-    if (!candidato) {
-      throw new Error('O Gemini não retornou uma resposta.');
-    }
-
-
-    const texto = candidato.content?.parts
-      ?.map(parte => parte.text || '')
-      .join('\n')
-      .trim();
-
-    if (!texto) {
-      throw new Error(
-        'O Gemini retornou uma resposta vazia.'
-      );
-    }
-
-
-    const chunks =
-      candidato.groundingMetadata?.groundingChunks || [];
-
-    const fontes = chunks
-      .filter(item => item.web?.uri)
-      .map(item => ({
-        titulo: item.web.title || 'Fonte consultada',
-        url: item.web.uri,
-      }));
-
-    // Remove fontes duplicadas.
-    const fontesUnicas = [
-      ...new Map(
-        fontes.map(fonte => [fonte.url, fonte])
-      ).values(),
-    ];
-
-    return {
-      texto,
-      fontes: fontesUnicas,
-    };
-
-  } catch (erro) {
-    console.log('Erro Gemini:', erro.message);
-    throw erro;
   }
 }
+
 
 
 
