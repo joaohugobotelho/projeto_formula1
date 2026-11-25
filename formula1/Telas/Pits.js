@@ -16,7 +16,7 @@ const API = 'https://api.openf1.org/v1';
 
 const temporadas = ['2024', '2025', '2026'];
 
-// Compostos e cores dos pneus
+//  cores dos pneus
 const compostos = {
   SOFT: { nome: 'Macio', cor: '#E53935' },
   MEDIUM: { nome: 'Médio', cor: '#FBC02D' },
@@ -83,6 +83,52 @@ function PneuDesenho({ cor }) {
   );
 }
 
+
+function associarPneus(parada, stints, transicoesUtilizadas) {
+  let melhorOpcao = null;
+  let menorDistancia = Infinity;
+
+  for (let i = 0; i < stints.length - 1; i++) {
+    const anterior = stints[i];
+    const novo = stints[i + 1];
+
+    const chave = `${anterior.stint_number}-${novo.stint_number}`;
+
+    if (transicoesUtilizadas.has(chave)) continue;
+
+
+    const distancia = Math.min(
+      Math.abs(parada.lap_number - anterior.lap_end),
+      Math.abs(parada.lap_number - novo.lap_start)
+    );
+
+    if (distancia < menorDistancia) {
+      menorDistancia = distancia;
+
+      melhorOpcao = {
+        anterior,
+        novo,
+        chave,
+      };
+    }
+  }
+
+  if (!melhorOpcao || menorDistancia > 1) {
+    return {
+      pneuAnterior: null,
+      pneuNovo: null,
+    };
+  }
+
+  transicoesUtilizadas.add(melhorOpcao.chave);
+
+  return {
+    pneuAnterior: melhorOpcao.anterior.compound,
+    pneuNovo: melhorOpcao.novo.compound,
+  };
+}
+
+
 export default function Pits() {
   const [temporada, setTemporada] = useState('2025');
 
@@ -104,7 +150,7 @@ export default function Pits() {
 
   const [erro, setErro] = useState('');
 
-  // Função para consultar a API
+  // funçao para consultar a API
   async function buscarDados(url) {
     const resposta = await fetch(url);
 
@@ -115,7 +161,7 @@ export default function Pits() {
     return await resposta.json();
   }
 
-  // ETAPA 1: CARREGAR OS GPs DA TEMPORADA
+  //  CARREGAR OS GPS DA TEMPORADA
   useEffect(() => {
     async function carregarTemporada() {
       try {
@@ -184,7 +230,7 @@ export default function Pits() {
     carregarTemporada();
   }, [temporada]);
 
-  // ETAPA 2: SELECIONAR GP E CARREGAR PILOTOS
+  //SELECIONAR GP E CARREGAR PILOTOS
   async function selecionarGP(gp) {
     try {
       setGpSelecionado(gp);
@@ -230,7 +276,8 @@ export default function Pits() {
     }
   }
 
-  // ETAPA 3: CARREGAR PIT STOPS E PNEUS
+  //  CARREGAR PIT STOPS E PNEUS
+
   async function selecionarPiloto(piloto) {
     setPilotoSelecionado(piloto);
     setMostrarPilotos(false);
@@ -254,51 +301,65 @@ export default function Pits() {
         ),
       ]);
 
+      // Ordena os stints pela sequência oficial.
       const stintsOrdenados = [...dadosStints].sort(
         (a, b) => a.stint_number - b.stint_number
       );
 
-      const pitStopsOrdenados = [...dadosPit].sort(
-        (a, b) => a.lap_number - b.lap_number
+      // Ordena as entradas no pit lane.
+      const pitOrdenados = [...dadosPit].sort(
+        (a, b) =>
+          a.lap_number - b.lap_number ||
+          new Date(a.date) - new Date(b.date)
       );
 
-      const paradasComPneus = pitStopsOrdenados.map(
-        (parada) => {
-          const stintAnterior = stintsOrdenados
-            .filter(
-              (stint) =>
-                stint.lap_end <= parada.lap_number
-            )
-            .sort(
-              (a, b) => b.lap_end - a.lap_end
-            )[0];
+      // Remove somente registros exatamente duplicados.
+      const registrosUnicos = Array.from(
+        new Map(
+          pitOrdenados.map(parada => [
+            `${parada.lap_number}-${parada.date}`,
+            parada,
+          ])
+        ).values()
+      );
 
-          const stintNovo = stintsOrdenados
-            .filter(
-              (stint) =>
-                stint.lap_start > parada.lap_number
-            )
-            .sort(
-              (a, b) => a.lap_start - b.lap_start
-            )[0];
+      const transicoesUtilizadas = new Set();
+
+
+      // box pra troca de pneu
+      const paradasComPneus = registrosUnicos
+        .map(parada => {
+          const pneus = associarPneus(
+            parada,
+            stintsOrdenados,
+            transicoesUtilizadas
+          );
 
           return {
             ...parada,
-            pneuAnterior:
-              stintAnterior?.compound || null,
-            pneuNovo:
-              stintNovo?.compound || null,
+            ...pneus,
           };
-        }
-      );
+        })
+        .filter(parada =>
+          parada.pneuAnterior &&
+          parada.pneuNovo &&
+          parada.pneuAnterior !== parada.pneuNovo
+        );
+
+
+
+
 
       setParadas(paradasComPneus);
+
     } catch (error) {
+      console.log('ERRO AO BUSCAR PITS:', error);
       setErro(error.message);
     } finally {
       setCarregandoParadas(false);
     }
   }
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -310,7 +371,7 @@ export default function Pits() {
           Pits — F1 HUB
         </Text>
 
-        {/* ETAPA 1 - TEMPORADA */}
+        
         <Text style={styles.etapa}>
           ETAPA 1 · ESCOLHA A TEMPORADA
         </Text>
@@ -333,7 +394,7 @@ export default function Pits() {
                 style={[
                   styles.textoTemporada,
                   temporada === ano &&
-                    styles.textoTemporadaAtiva,
+                  styles.textoTemporadaAtiva,
                 ]}
               >
                 {ano}
@@ -342,7 +403,7 @@ export default function Pits() {
           ))}
         </View>
 
-        {/* ETAPA 2 - GP */}
+        
         <Text style={styles.etapa}>
           ETAPA 2 · ESCOLHA O GP
         </Text>
@@ -397,8 +458,8 @@ export default function Pits() {
                 <Text style={styles.dataGP}>
                   {gp.date_start
                     ? new Date(
-                        gp.date_start
-                      ).toLocaleDateString('pt-BR')
+                      gp.date_start
+                    ).toLocaleDateString('pt-BR')
                     : ''}
                 </Text>
               </TouchableOpacity>
@@ -413,7 +474,7 @@ export default function Pits() {
           />
         )}
 
-        {/* ETAPA 3 - PILOTO */}
+        
         <Text style={styles.etapa}>
           ETAPA 3 · ESCOLHA O PILOTO
         </Text>
@@ -491,7 +552,7 @@ export default function Pits() {
           />
         )}
 
-        {/* ERROS */}
+        
         {erro !== '' && (
           <View style={styles.avisoErro}>
             <Ionicons
@@ -506,7 +567,7 @@ export default function Pits() {
           </View>
         )}
 
-        {/* ETAPA 4 - BOXES */}
+        
         <Text style={styles.etapa}>
           ETAPA 4 · PARADAS NOS BOXES
         </Text>
@@ -546,6 +607,7 @@ export default function Pits() {
             </Text>
           </View>
         ) : (
+
           paradas.map((parada, indice) => {
             const anterior = obterComposto(
               parada.pneuAnterior
@@ -562,10 +624,14 @@ export default function Pits() {
                 key={`${parada.lap_number}-${indice}`}
                 style={styles.cardParada}
               >
-                {/* CABEÇALHO DA PARADA */}
+
                 <View style={styles.linhaTitulo}>
                   <Text style={styles.tituloParada}>
-                    Parada {indice + 1}
+                    Troca de pneus {indice + 1}
+                  </Text>
+
+                  <Text style={styles.concluida}>
+                    Confirmada
                   </Text>
 
                   <Text style={styles.concluida}>
@@ -573,7 +639,7 @@ export default function Pits() {
                   </Text>
                 </View>
 
-                {/* INFORMAÇÕES */}
+               
                 <View style={styles.informacoes}>
                   <View>
                     <Text style={styles.rotulo}>

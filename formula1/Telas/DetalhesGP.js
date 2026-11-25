@@ -57,7 +57,7 @@ export default function DetalhesGP({ route }) {
     carregarCircuito();
   }, [gp]);
 
-  // Solicita a análise do setor ao Gemini
+ 
   async function analisarSetor(setor) {
     if (carregandoAnalise || !dadosCircuito || !setor) return;
 
@@ -84,7 +84,7 @@ export default function DetalhesGP({ route }) {
     }
   }
 
-  // Formata as datas do GP
+  
   function formatarData(data) {
     if (!data) return 'Não disponível';
 
@@ -95,7 +95,7 @@ export default function DetalhesGP({ route }) {
     });
   }
 
-  // Calcula as dimensões necessárias para desenhar a pista
+  // Calcula as dimensoes pra desenhar a pista
   function obterDimensoesPista() {
     if (
       !dadosCircuito?.x?.length ||
@@ -149,7 +149,7 @@ export default function DetalhesGP({ route }) {
     };
   }
 
-  // Converte as coordenadas originais para a posição visual
+ 
   function converterCoordenada(x, y, dimensoes) {
     if (!dimensoes) return null;
 
@@ -166,7 +166,7 @@ export default function DetalhesGP({ route }) {
     };
   }
 
-  // Obtém todos os pontos do desenho da pista
+  
   function obterPontosPista(dimensoes) {
     if (
       !dadosCircuito?.x ||
@@ -195,7 +195,7 @@ export default function DetalhesGP({ route }) {
   const dimensoesPista = obterDimensoesPista();
   const pontos = obterPontosPista(dimensoesPista);
 
-  // Identifica o mapeamento correspondente ao circuito e temporada
+  
   const chaveCircuito = dadosCircuito
     ? `${dadosCircuito.circuitKey}-${dadosCircuito.season}`
     : null;
@@ -204,7 +204,7 @@ export default function DetalhesGP({ route }) {
     ? setoresCircuitos[chaveCircuito]
     : null;
 
-  // Cores utilizadas nos setores
+  // Cores setores
   const coresSetores = {
     S1: '#3B82F6',
     S2: '#F59E0B',
@@ -232,7 +232,7 @@ export default function DetalhesGP({ route }) {
       }
     );
 
-    // Converte as posições das curvas para posições no desenho
+    // Converte as posicoes das curvas para posicoes no desenho
     const curvasOrdenadas = dadosCircuito.corners
       .map(curva => {
         const numero =
@@ -502,7 +502,7 @@ export default function DetalhesGP({ route }) {
                     }}
                   >
 
-                    {/* Traçado colorido por setor */}
+                    
                     {segmentosColoridos.length > 0 ? (
                       segmentosColoridos.map((segmento, index) => {
                         const { ponto, anterior, cor } = segmento;
@@ -539,7 +539,7 @@ export default function DetalhesGP({ route }) {
                         );
                       })
                     ) : (
-                      // Traçado neutro caso não seja possível
+                      // tracado neutro caso não seja possível
                       // identificar as posições das curvas
                       pontos.slice(1).map((ponto, index) => {
                         const anterior = pontos[index];
@@ -754,7 +754,7 @@ export default function DetalhesGP({ route }) {
                   </View>
                 )}
 
-                {/* RESULTADO DO GEMINI */}
+                
                 {analiseSetor && !carregandoAnalise && (
                   <View style={estilos.cardAnalise}>
 

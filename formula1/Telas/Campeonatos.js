@@ -12,6 +12,63 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// cache campeao mundial
+// tratamento de tentativas pra nao falhar a api
+
+const cacheCampeonatos = {};
+
+async function buscarComTentativas(url, tentativas = 3) {
+  let ultimoErro;
+
+  for(let tentativa = 1; tentativa <= tentativas; tentativa++){
+    const controlar = new AbortController();
+
+    const timeout = setTimeout(()=> {
+      controlar.abort();
+    }, 12000);
+
+    try {
+      const resposta = await fetch(url, {
+        signal:controlar.signal,
+      });
+
+      if(!resposta.ok) {
+        const erro = new Error(`Erro HTTP: ${resposta.status}`);
+
+        if(resposta.status !== 429 && resposta.status < 500) {
+          throw erro;
+        }
+        throw erro;
+      }
+
+      return await resposta.json();
+    } catch (erro) {
+      ultimoErro = erro;
+
+      if (
+        tentativa === tentativas ||
+        (erro.message.startsWith('Erro HTTP:') &&
+          !['Erro HTTP: 429'].includes(erro.message) &&
+          !erro.message.includes('5'))
+      ) {
+        throw erro;
+      }
+
+      await new Promise(resolve =>
+        setTimeout(resolve, tentativa * 1000)
+      );
+
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw ultimoErro;
+}
+  
+
+
+
 export default function Campeonatos() {
   const [ano, setAno] = useState(2025);
   const [campeaoPiloto, setCampeaoPiloto] = useState(null);
@@ -19,73 +76,72 @@ export default function Campeonatos() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
 
-  useEffect(() => {
-    buscarCampeoes();
-  }, [ano]);
+  
+useEffect(() => {
+  let ativo = true;
 
-  async function buscarCampeoes() {
+  async function carregar() {
     setCarregando(true);
     setErro('');
+
+    
+    if (cacheCampeonatos[ano]) {
+      setCampeaoPiloto(cacheCampeonatos[ano].piloto);
+      setCampeaoEquipe(cacheCampeonatos[ano].equipe);
+      setCarregando(false);
+      return;
+    }
 
     setCampeaoPiloto(null);
     setCampeaoEquipe(null);
 
     try {
-      // Busca as corridas da temporada
-      const resposta = await fetch(
-        `https://api.openf1.org/v1/sessions?year=${ano}&session_name=Race`
-      );
+      const urlCorridas =
+        `https://api.openf1.org/v1/sessions?year=${ano}&session_name=Race`;
 
-      if (!resposta.ok) {
-        throw new Error('Erro ao buscar corridas');
-      }
+      const corridas = await buscarComTentativas(urlCorridas);
 
-      const corridas = await resposta.json();
+      if (!ativo) return;
 
-      // Considera apenas corridas que já começaram
-      const corridasDisponiveis = corridas.filter(
-        (corrida) => new Date(corrida.date_start) <= new Date()
-      );
+    
+      const corridasDisponiveis = corridas
+        .filter(corrida =>
+          !corrida.is_cancelled &&
+          corrida.date_end &&
+          new Date(corrida.date_end) <= new Date()
+        )
+        .sort((a, b) =>
+          new Date(b.date_end) - new Date(a.date_end)
+        );
 
       if (corridasDisponiveis.length === 0) {
-        throw new Error('Nenhuma corrida disponível');
+        throw new Error('Nenhuma corrida encerrada encontrada.');
       }
-
-      // Seleciona a corrida mais recente
-      corridasDisponiveis.sort(
-        (a, b) =>
-          new Date(b.date_start) - new Date(a.date_start)
-      );
 
       const sessao = corridasDisponiveis[0].session_key;
 
-      // Busca os dados do campeonato e dos pilotos
-      const [respostaPilotos, respostaEquipes, respostaNomes] =
+      const urlPilotos =
+        `https://api.openf1.org/v1/championship_drivers?session_key=${sessao}`;
+
+      const urlEquipes =
+        `https://api.openf1.org/v1/championship_teams?session_key=${sessao}`;
+
+      const urlNomes =
+        `https://api.openf1.org/v1/drivers?session_key=${sessao}`;
+
+     
+      const [dadosPilotos, dadosEquipes, nomesPilotos] =
         await Promise.all([
-          fetch(
-            `https://api.openf1.org/v1/championship_drivers?session_key=${sessao}`
-          ),
-          fetch(
-            `https://api.openf1.org/v1/championship_teams?session_key=${sessao}`
-          ),
-          fetch(
-            `https://api.openf1.org/v1/drivers?session_key=${sessao}`
-          ),
+          buscarComTentativas(urlPilotos),
+          buscarComTentativas(urlEquipes),
+          buscarComTentativas(urlNomes).catch(erro => {
+            console.log('Erro ao buscar fotos e nomes:', erro.message);
+            return [];
+          }),
         ]);
 
-      if (
-        !respostaPilotos.ok ||
-        !respostaEquipes.ok ||
-        !respostaNomes.ok
-      ) {
-        throw new Error('Erro ao buscar os campeonatos');
-      }
+      if (!ativo) return;
 
-      const dadosPilotos = await respostaPilotos.json();
-      const dadosEquipes = await respostaEquipes.json();
-      const nomesPilotos = await respostaNomes.json();
-
-      // Organiza a classificação dos pilotos
       dadosPilotos.sort(
         (a, b) => a.position_current - b.position_current
       );
@@ -98,32 +154,54 @@ export default function Campeonatos() {
       const primeiraEquipe = dadosEquipes[0];
 
       if (!primeiroPiloto || !primeiraEquipe) {
-        throw new Error('Classificação indisponível');
+        throw new Error('Classificação indisponível.');
       }
 
-      // Encontra o nome e a foto do piloto
       const dadosDoPiloto = nomesPilotos.find(
-        (item) =>
+        item =>
           item.driver_number === primeiroPiloto.driver_number
       );
 
-      setCampeaoPiloto({
+      const piloto = {
         ...primeiroPiloto,
-        nome: dadosDoPiloto?.full_name || 'Nome não disponível',
-        equipe: dadosDoPiloto?.team_name || 'Equipe não disponível',
-        foto: dadosDoPiloto?.headshot_url,
-      });
+        nome: dadosDoPiloto?.full_name ||
+          `Piloto #${primeiroPiloto.driver_number}`,
+        equipe: dadosDoPiloto?.team_name ||
+          'Equipe não disponível',
+        foto: dadosDoPiloto?.headshot_url || null,
+      };
 
+      cacheCampeonatos[ano] = {
+        piloto,
+        equipe: primeiraEquipe,
+      };
+
+      setCampeaoPiloto(piloto);
       setCampeaoEquipe(primeiraEquipe);
 
     } catch (error) {
-      setErro(
-        'Não foi possível carregar os dados desta temporada.'
-      );
+      console.log('ERRO CAMPEONATOS:', error.message);
+
+      if (ativo) {
+        setErro(
+          'Não foi possível carregar os dados desta temporada. Tente novamente.'
+        );
+      }
+
     } finally {
-      setCarregando(false);
+      if (ativo) {
+        setCarregando(false);
+      }
     }
   }
+
+  carregar();
+
+  return () => {
+    ativo = false;
+  };
+}, [ano]);
+
 
   return (
     <SafeAreaView style={estilos.container}>
