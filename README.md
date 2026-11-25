@@ -68,7 +68,6 @@ formula1/
     ├── Inicio.js
     ├── Pits.js
     ├── Sobre.js
-    └── TesteGemini.js
 ```
 
 ### Organização das pastas
