@@ -664,7 +664,7 @@ export default function Pits() {
 
                 <View style={styles.divisor} />
 
-                {/* TROCA DE PNEUS */}
+                
                 <View style={styles.trocaPneus}>
                   <View style={styles.pneu}>
                     <PneuDesenho cor={anterior.cor} />

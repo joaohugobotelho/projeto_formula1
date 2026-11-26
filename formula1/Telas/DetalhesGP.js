@@ -470,7 +470,7 @@ export default function DetalhesGP({ route }) {
           ) : dadosCircuito ? (
             <>
 
-              {/* MAPA DO CIRCUITO */}
+              
               <View style={estilos.cardCircuito}>
 
                 <Text style={estilos.nomeMapa}>
@@ -580,7 +580,7 @@ export default function DetalhesGP({ route }) {
                   </View>
                 </View>
 
-                {/* LEGENDA DOS SETORES */}
+                
                 <View style={estilos.legendaSetores}>
 
                   {['S1', 'S2', 'S3'].map(setor => (
@@ -607,7 +607,7 @@ export default function DetalhesGP({ route }) {
 
               </View>
 
-              {/* ANÁLISE DOS SETORES */}
+              
               <View style={estilos.secaoSetores}>
 
                 <Text style={estilos.tituloSecao}>
@@ -714,7 +714,7 @@ export default function DetalhesGP({ route }) {
                   })
                 )}
 
-                {/* CARREGAMENTO DA ANÁLISE */}
+                
                 {carregandoAnalise && (
                   <View style={estilos.cardCarregandoAnalise}>
                     <ActivityIndicator
@@ -732,7 +732,7 @@ export default function DetalhesGP({ route }) {
                   </View>
                 )}
 
-                {/* ERRO DA ANÁLISE */}
+                
                 {erroAnalise && (
                   <View style={estilos.cardErroAnalise}>
                     <Text style={estilos.tituloErroAnalise}>

@@ -351,7 +351,7 @@ const DetalhesPiloto = ({ route }) => {
       showsVerticalScrollIndicator={false}
     >
 
-      {/* CABEÇALHO */}
+      
 
       <View style={styles.cabecalho}>
 
@@ -398,7 +398,7 @@ const DetalhesPiloto = ({ route }) => {
       </View>
 
 
-      {/* ESTATÍSTICAS */}
+      
 
       {estatisticas && (
 
@@ -457,7 +457,7 @@ const DetalhesPiloto = ({ route }) => {
       )}
 
 
-      {/* EQUIPES DA CARREIRA */}
+      
 
       {estatisticas && (
 
@@ -493,7 +493,7 @@ const DetalhesPiloto = ({ route }) => {
       )}
 
 
-      {/* BIOGRAFIA */}
+      
 
       <View style={styles.areaHistoria}>
 
@@ -595,7 +595,7 @@ const DetalhesPiloto = ({ route }) => {
       </View>
 
 
-      {/* FONTES */}
+      
 
       {fontes.length > 0 && (
 
