@@ -1,3 +1,5 @@
+Nomes: Bernardo Ladeira Leal de Medeiros, João Hugo Teixeira Martins Botelho
+
 # F1 HUB 🏎️
 
 Aplicativo mobile desenvolvido com **React Native e Expo** para reunir informações sobre o universo da Fórmula 1. O projeto apresenta dados de pilotos, equipes, Grandes Prêmios, campeonatos e paradas nos boxes em uma interface com tema escuro inspirado no automobilismo.
